@@ -506,7 +506,7 @@ class openVoiceFilterAudioProcessor():
         # invert phase
         phase = torch.stack([phase.cos(), phase.sin()], dim=-1).to(dtype=stft_matrix.dtype, device=stft_matrix.device)
         stft_matrix = stft_matrix.unsqueeze(-1).expand_as(phase)
-        return torchaudio.functional.istft(stft_matrix * torch.exp(phase), self.n_fft, hop_length=self.hop_length, win_length=self.win_length, window=torch.hamming_window(self.win_length, periodic=False, alpha=0.5, beta=0.5).to(device=stft_matrix.device), center=True, normalized=False, onesided=True, length=None)
+        return torch.istft(stft_matrix * torch.exp(phase), self.n_fft, hop_length=self.hop_length, win_length=self.win_length, window=torch.hamming_window(self.win_length, periodic=False, alpha=0.5, beta=0.5).to(device=stft_matrix.device), center=True, normalized=False, onesided=True, length=None)
 
     def stft(self, y):
         return librosa.stft(y=y, n_fft=self.n_fft,
