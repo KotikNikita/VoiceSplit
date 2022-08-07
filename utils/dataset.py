@@ -32,13 +32,24 @@ class Dataset(Dataset):
     def __getitem__(self, idx):
         if self.train:
             mixed_wav = self.ap.load_wav(self.mixed_wav_list[idx])
-            mixed_spec, mixed_phase = self.ap.get_spec_from_audio(mixed_wav, return_phase=True)
             target_wav = self.ap.load_wav(self.target_wav_list[idx])
+            length = min(len(mixed_wav), len(target_wav))
+            mixed_wav = mixed_wav[:length]
+            target_wav = target_wav[:length]
+
+
+            mixed_spec, mixed_phase = self.ap.get_spec_from_audio(mixed_wav, return_phase=True)
+            target_spec, target_phase = self.ap.get_spec_from_audio(target_wav, return_phase=True)
+
+
             seq_len = torch.from_numpy(np.array([mixed_wav.shape[0]]))
             mixed_phase = torch.from_numpy(np.array(mixed_phase))
             mixed_spec = torch.from_numpy(mixed_spec)
+            target_phase = torch.from_numpy(np.array(target_phase))
+            target_spec = torch.from_numpy(target_spec)
+            
             target_wav = torch.from_numpy(target_wav)
-            return torch.load(self.emb_list[idx]), torch.load(self.target_spec_list[idx]), mixed_spec, seq_len, target_wav, mixed_phase  
+            return torch.load(self.emb_list[idx]), target_spec, mixed_spec, seq_len, target_wav, mixed_phase  
         else: # if test
             emb = torch.load(self.emb_list[idx])
             # target_spec = torch.load(self.target_spec_list[idx])
