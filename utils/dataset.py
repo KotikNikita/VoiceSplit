@@ -74,7 +74,7 @@ def train_dataloader(c, ap):
                           shuffle=True,
                           num_workers=c.train_config['num_workers'],
                           collate_fn=train_collate_fn,
-                          pin_memory=True,
+                          pin_memory=False,
                           drop_last=True,
                           sampler=None)
 
@@ -104,12 +104,13 @@ def train_collate_fn(item):
         if emb.tolist() == [0]:
             #print("ignorado ", emb)
             continue
+        max_len = 160
         embs_list.append(emb)
-        target_list.append(target)
-        mixed_list.append(mixed)
-        seq_len_list.append(seq_len)
-        mixed_phase_list.append(mixed_phase)
-        target_wav_list.append(target_wav)
+        target_list.append(target[:max_len,:])
+        mixed_list.append(mixed[:max_len,:])
+        seq_len_list.append(seq_len[:max_len])
+        mixed_phase_list.append(mixed_phase[:max_len])
+        target_wav_list.append(target_wav[:max_len])
 
     # concate tensors in dim 0
     target_list = stack(target_list, dim=0)
@@ -138,13 +139,14 @@ def test_collate_fn(batch):
         if emb.tolist() == [0]:
             #print("ignorado ", emb)
             continue
+        max_len = 160
         embs_list.append(emb)
-        target_list.append(target)
-        mixed_list.append(mixed)
-        seq_len_list.append(seq_len)
-        mixed_phase_list.append(mixed_phase)
-        target_wav_list.append(target_wav)
-        mixed_wav_list.append(mixed_wav)
+        target_list.append(target[:max_len,:])
+        mixed_list.append(mixed[:max_len,:])
+        seq_len_list.append(seq_len[:max_len])
+        mixed_phase_list.append(mixed_phase[:max_len])
+        target_wav_list.append(target_wav[:max_len])
+        mixed_wav_list.append(mixed_wav[:max_len])
 
     # concate tensors in dim 0
     target_list = stack(target_list, dim=0)
