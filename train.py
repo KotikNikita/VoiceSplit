@@ -79,7 +79,7 @@ def train(args, log_dir, checkpoint_path, trainloader, testloader, tensorboard, 
         raise Exception(" The loss '"+c.loss['loss_name']+"' is not suported")
 
     for _ in range(c.train_config['epochs']):
-        validation(criterion, ap, model, testloader, tensorboard, step,  cuda=cuda, loss_name=c.loss['loss_name'] )
+#         validation(criterion, ap, model, testloader, tensorboard, step,  cuda=cuda, loss_name=c.loss['loss_name'] )
         #break
         model.train()
         for emb, target, mixed, seq_len, target_wav, spec_phase in trainloader:
