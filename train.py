@@ -32,10 +32,10 @@ def train(args, log_dir, checkpoint_path, trainloader, testloader, tensorboard, 
 
     if c.train_config['optimizer'] == 'adam':
         optimizer = torch.optim.Adam(model.parameters(),
-                                    lr=c.train_config['learning_rate'])
+                                    lr=c.train_config['learning_rate'], betas=(0,0))
         # optimizer = torch.optim.Adam([torch.Tensor([0]),torch.Tensor([0])],
         #                              lr=c.train_config['learning_rate'])
-        print(c.train_config['learning_rate'])
+        # print(c.train_config['learning_rate'])
     else:
         raise Exception("The %s  not is a optimizer supported" % c.train['optimizer'])
 
@@ -55,10 +55,10 @@ def train(args, log_dir, checkpoint_path, trainloader, testloader, tensorboard, 
             model_dict = set_init_dict(model_dict, checkpoint, c)
             model.load_state_dict(model_dict)
             del model_dict
-        try:
-            optimizer.load_state_dict(checkpoint['optimizer'])
-        except:
-            print(" > Optimizer state is not loaded from checkpoint path, you see this mybe you change the optimizer")
+        # try:
+        #     # optimizer.load_state_dict(checkpoint['optimizer'])
+        # except:
+        #     print(" > Optimizer state is not loaded from checkpoint path, you see this mybe you change the optimizer")
         
         step = checkpoint['step']
     else:
@@ -80,7 +80,7 @@ def train(args, log_dir, checkpoint_path, trainloader, testloader, tensorboard, 
         criterion = SiSNR_With_Pit()
     else:
         raise Exception(" The loss '"+c.loss['loss_name']+"' is not suported")
-
+    
     for _ in range(c.train_config['epochs']):
 #         validation(criterion, ap, model, testloader, tensorboard, step,  cuda=cuda, loss_name=c.loss['loss_name'] )
         #break
@@ -95,6 +95,12 @@ def train(args, log_dir, checkpoint_path, trainloader, testloader, tensorboard, 
                     spec_phase = spec_phase.cuda()
 
                 mask = model(mixed, emb)
+                # for p in model.parameters():
+                #     print(p.detach().data[0])
+                # i += 1
+                # if i == 2:
+                #     return
+                
                 # print('mix',mixed[:,35,150])
                 # print('emb',emb[:,3])
                 output = mixed * mask
@@ -114,17 +120,18 @@ def train(args, log_dir, checkpoint_path, trainloader, testloader, tensorboard, 
                     #target = torch.Tensor(target, requires_grad = True)
                 
                 # Calculate loss
-                print(target.requires_grad)
+
+                    # param_norm = p.detach().data.norm(2)
                 loss = criterion(output, target, seq_len)
                 optimizer.zero_grad()
                 loss.backward()
                 # print('gradient:',torch.norm(target.grad.detach()))
-                total_norm = 0
-                for p in model.parameters():
-                    param_norm = p.detach().data.norm(2)
-                    total_norm += param_norm.item() ** 2
-                total_norm = total_norm ** (1. / 2)
-                print(f'gradient norm: {total_norm}')
+                # total_norm = 0
+                # for p in model.parameters():
+                #     param_norm = p.detach().data.norm(2)
+                #     total_norm += param_norm.item() ** 2
+                # total_norm = total_norm ** (1. / 2)
+                # print(f'gradient norm: {total_norm}')
                 # print('gradient:',torch.norm(target.grad.detach()))
                 optimizer.step()
                 step += 1
@@ -138,6 +145,8 @@ def train(args, log_dir, checkpoint_path, trainloader, testloader, tensorboard, 
                 if step % c.train_config['summary_interval'] == 0:
                     tensorboard.log_training(loss, step)
                     print("Write summary at step %d" % step, f'loss={loss}')
+
+                # print('best shit ever',optimizer.get_lr())
 
                 # save checkpoint file  and evaluate and save sample to tensorboard
                 if step % c.train_config['checkpoint_interval'] == 0:
