@@ -32,7 +32,10 @@ def train(args, log_dir, checkpoint_path, trainloader, testloader, tensorboard, 
 
     if c.train_config['optimizer'] == 'adam':
         optimizer = torch.optim.Adam(model.parameters(),
-                                     lr=c.train_config['learning_rate'])
+                                    lr=c.train_config['learning_rate'])
+        # optimizer = torch.optim.Adam([torch.Tensor([0]),torch.Tensor([0])],
+        #                              lr=c.train_config['learning_rate'])
+        print(c.train_config['learning_rate'])
     else:
         raise Exception("The %s  not is a optimizer supported" % c.train['optimizer'])
 
@@ -92,7 +95,10 @@ def train(args, log_dir, checkpoint_path, trainloader, testloader, tensorboard, 
                     spec_phase = spec_phase.cuda()
 
                 mask = model(mixed, emb)
+                # print('mix',mixed[:,35,150])
+                # print('emb',emb[:,3])
                 output = mixed * mask
+                # print('output',output[:,35,150])
 
                 if c.loss['loss_name'] == 'si_snr':
                     # convert spec to wav using phase
@@ -100,14 +106,26 @@ def train(args, log_dir, checkpoint_path, trainloader, testloader, tensorboard, 
                     target = ap.torch_inv_spectrogram(target, spec_phase)
                     shape = list(target.shape)
                     target = torch.reshape(target, [shape[0],1]+shape[1:]) # append channel dim
+                    target = torch.Tensor(target, requires_grad = True)
                     output = torch.reshape(output, [shape[0],1]+shape[1:]) # append channel dim
                 else:
                     seq_len = None
+                    target.requires_grad = True
+                    #target = torch.Tensor(target, requires_grad = True)
                 
                 # Calculate loss
+                print(target.requires_grad)
                 loss = criterion(output, target, seq_len)
                 optimizer.zero_grad()
                 loss.backward()
+                # print('gradient:',torch.norm(target.grad.detach()))
+                total_norm = 0
+                for p in model.parameters():
+                    param_norm = p.detach().data.norm(2)
+                    total_norm += param_norm.item() ** 2
+                total_norm = total_norm ** (1. / 2)
+                print(f'gradient norm: {total_norm}')
+                # print('gradient:',torch.norm(target.grad.detach()))
                 optimizer.step()
                 step += 1
 
@@ -119,7 +137,7 @@ def train(args, log_dir, checkpoint_path, trainloader, testloader, tensorboard, 
                 # write loss to tensorboard
                 if step % c.train_config['summary_interval'] == 0:
                     tensorboard.log_training(loss, step)
-                    print("Write summary at step %d" % step)
+                    print("Write summary at step %d" % step, f'loss={loss}')
 
                 # save checkpoint file  and evaluate and save sample to tensorboard
                 if step % c.train_config['checkpoint_interval'] == 0:
